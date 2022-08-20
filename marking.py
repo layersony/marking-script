@@ -71,8 +71,16 @@ def main(labname):
     subprocess.run(f"rm -rf {os.getcwd()}/{studentUsername}/", shell=True)
     print("="*60)
 
+def cleanup(labname):
+  subprocess.run(f"mv {os.getcwd()}/{labname}.csv  {os.getcwd()}/markedCsv", shell=True)
+  # remove submissions folder
+  subprocess.run(f"rm -rf {os.getcwd()}/submissions", shell=True)
+  print("*"*60, end="\n")
+  print("Cleanup Done")
+
 if __name__ == '__main__':
-  labname = input("Lab Name: ")
+  labname = input("Lab Name [studentResults]: ") or "studentResults"
   createheader(labname)
   main(labname)
   print('Done Marking')
+  cleanup(labname)
