@@ -5,6 +5,12 @@ from bs4 import BeautifulSoup
 import subprocess
 import csv
 
+
+class bcolors:
+  OKGREEN = '\033[92m'
+  WARNING = '\033[93m'
+  FAIL = '\033[91m'
+
 def newInstance(labname, name, gitname, status, msg):
   data = [name, gitname, status, msg]
   with open(f'{labname}.csv', 'a', encoding='UTF8') as f:
@@ -76,11 +82,15 @@ def cleanup(labname):
   # remove submissions folder
   subprocess.run(f"rm -rf {os.getcwd()}/submissions", shell=True)
   print("*"*60, end="\n")
-  print("Cleanup Done")
+  print(f"{bcolors.OKGREEN}Cleanup Done")
 
 if __name__ == '__main__':
-  labname = input("Lab Name [studentResults]: ") or "studentResults"
-  createheader(labname)
-  main(labname)
-  print('Done Marking')
-  cleanup(labname)
+  try:
+    labname = input("Lab Name [studentResults]: ") or "studentResults"
+    createheader(labname)
+    main(labname)
+    print(f'{bcolors.OKGREEN}Done Marking')
+    cleanup(labname)
+  except FileNotFoundError:
+    print("*"*60)
+    print(f"{bcolors.FAIL}Error: Make sure Submissions file exists in the root directory")
