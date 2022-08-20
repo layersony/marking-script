@@ -5,19 +5,19 @@ from bs4 import BeautifulSoup
 import subprocess
 import csv
 
-def newInstance(name, gitname, status, msg):
+def newInstance(labname, name, gitname, status, msg):
   data = [name, gitname, status, msg]
-  with open('studentsMarks.csv', 'a', encoding='UTF8') as f:
+  with open(f'{labname}.csv', 'a', encoding='UTF8') as f:
     writer = csv.writer(f)
     writer.writerow(data)
 
-def createheader():
+def createheader(labname):
   header = ['Student Name', 'Git Name', 'Status', 'Message']
-  with open('studentsMarks.csv', 'w', encoding='UTF8') as f:
+  with open(f'{labname}.csv', 'w', encoding='UTF8') as f:
     writer = csv.writer(f)
     writer.writerow(header)
 
-def main():
+def main(labname):
   for filename in os.listdir(f"{os.getcwd()}/submissions"):
   
     f = codecs.open(f"submissions/{filename}", "r", "utf-8")
@@ -67,11 +67,12 @@ def main():
           status = "Complete"
 
     # new instance
-    newInstance(sname, gitSplit[3], status, msg)
+    newInstance(labname, sname, gitSplit[3], status, msg)
     subprocess.run(f"rm -rf {os.getcwd()}/{studentUsername}/", shell=True)
     print("="*60)
 
 if __name__ == '__main__':
-  createheader()
-  main()
+  labname = input("Lab Name: ")
+  createheader(labname)
+  main(labname)
   print('Done Marking')
