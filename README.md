@@ -22,6 +22,11 @@ Create Virtual Environment
 ```bash
   python3 marking.py
 ```
+- The Speed for marking will be depending on the labs test and your internet
+
+### Results
+
+- The marks will be inside `markedCsv` under the name you gave when running the application
 
 ## Known Bugs
 - Be aware of unclosed while loops or for loops
