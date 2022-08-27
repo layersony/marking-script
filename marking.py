@@ -48,6 +48,18 @@ def bundleMark(params) -> str:
   pathThisJson = f"{os.getcwd()}/{params.get('studentUsername')}/{params.get('gitRepoName')}/this.json"
   return pathThisJson
 
+# mark those with npm
+def npmMark(params) -> str:
+  """
+  Clones & runs learn test
+  :return: path for this.json file
+  """
+  subprocess.run(f"cd {params.get('studentUsername')}; git clone {params.get('gitlink')}; cd {params.get('gitRepoName')}; learn test -o this; cp .results.json this.json", shell=True)
+  pathThisJson = f"{os.getcwd()}/{params.get('studentUsername')}/{params.get('gitRepoName')}/this.json"
+  return pathThisJson
+
+# mark those with learn
+
 
 def main(labname, testType):
   for filename in os.listdir(f"{os.getcwd()}/submissions"):
@@ -88,8 +100,10 @@ def main(labname, testType):
         # marking starts
         if testType.lower() == 'rspec':
           filepath = rspecMark(params)
-        else:
+        elif testType.lower() == 'bundle':
           filepath = bundleMark(params)
+        else:
+          filepath = npmMark(params)
 
         with open(filepath) as f:
           data = json.load(f)
@@ -124,12 +138,12 @@ def runProgram(labname):
   """
   Main program to run
   """
-  testType = input("Test Type [rspec or bundle]: ")
+  testType = input("Test Type [rspec or bundle or npm]: ")
 
   if testType.strip() == "":
     print(f"{bcolors.WARNING}Make sure you enter test type \n{bcolors.ENDC}")
     runProgram(labname)
-  elif testType.strip() == "bundle" or testType.strip() == "rspec":
+  elif testType.strip() == "bundle" or testType.strip() == "rspec" or testType.strip() == "npm":
     createheader(labname)
     main(labname, testType)
     print(f'{bcolors.OKGREEN}Done Marking{bcolors.ENDC}')
