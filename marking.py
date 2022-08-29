@@ -54,10 +54,9 @@ def npmMark(params) -> str:
   Clones & runs learn test
   :return: path for this.json file
   """
-  subprocess.run(f"cd {params.get('studentUsername')}; git clone {params.get('gitlink')}; cd {params.get('gitRepoName')}; learn test -o this; cp .results.json this.json", shell=True)
+  subprocess.run(f"cd {params.get('studentUsername')}; git clone {params.get('gitlink')}; cd {params.get('gitRepoName')};npm install; npm test; cp .results.json this.json", shell=True)
   pathThisJson = f"{os.getcwd()}/{params.get('studentUsername')}/{params.get('gitRepoName')}/this.json"
   return pathThisJson
-
 # mark those with learn
 
 
@@ -105,20 +104,30 @@ def main(labname, testType):
         else:
           filepath = npmMark(params)
 
-        with open(filepath) as f:
-          data = json.load(f)
+        try:
+          with open(filepath) as f:
+            data = json.load(f)
 
-          # total number of examples
-          exampleCount = data['summary']['example_count']
-          # failed number of examples
-          failureCount = data['summary']['failure_count']
+            if testType.lower() == 'npm':
+              # total number of examples
+              exampleCount = data["stats"]["tests"]
+              # failed number of examples
+              failureCount = data["stats"]["failures"]
+            else:
+              # total number of examples
+              exampleCount = data['summary']['example_count']
+              # failed number of examples
+              failureCount = data['summary']['failure_count']
 
-          if failureCount >= exampleCount/2:
-            status = "Incomplete"
-            msg = "Either Test Failed or Do Push your code"
-          else:
-            status = "Complete"
-            msg = "Good Work"
+            if failureCount >= exampleCount/2:
+              status = "Incomplete"
+              msg = "Either Test Failed or Do Push your code"
+            else:
+              status = "Complete"
+              msg = "Good Work"
+        except FileNotFoundError:
+          status = "Incomplete"
+          msg = "Check Manually Some files Missing"
 
     # new instance
     newInstance(labname, sname, gitSplit[3], status, msg)
