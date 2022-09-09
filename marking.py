@@ -74,64 +74,62 @@ def main(labname, testType):
       status = None
       msg = None
 
-      # check my Students
-      if sname in myStudents:
-        # get github repo link
-        for a in beautifulSoupText.find_all('a', href=True):
-          glink = a['href']
+      # get github repo link
+      for a in beautifulSoupText.find_all('a', href=True):
+        glink = a['href']
 
-        gitSplit = glink.split('/')
-        studentUsername = gitSplit[3]
-        gitlink = "/".join(gitSplit[:5]).split('?')[0].split('#')[0]
+      gitSplit = glink.split('/')
+      studentUsername = gitSplit[3]
+      gitlink = "/".join(gitSplit[:5]).split('?')[0].split('#')[0]
 
-        gitRepoName = gitSplit[4].split('.')[0].split('?')[0].split('#')[0]
-        print(studentUsername)
+      gitRepoName = gitSplit[4].split('.')[0].split('?')[0].split('#')[0]
+      print(studentUsername)
 
-        # creates folder for student
-        subprocess.run(["mkdir", f"{studentUsername}"])
+      # creates folder for student
+      subprocess.run(["mkdir", f"{studentUsername}"])
 
-        if "fis-wip" in gitSplit or "commit" in gitSplit or "fis-whip" in gitSplit:
-          status = "Incomplete"
-          msg = "Push your Code to the Master Branch"
-        else:
-          if len(gitSplit) == 5 or "master" in gitSplit or "main" in gitSplit:
-            params = {
-                "studentUsername": studentUsername,
-                "gitlink": gitlink,
-                "gitRepoName": gitRepoName
-            }
-            # marking starts
-            if testType.lower() == 'rspec':
-              filepath = rspecMark(params)
-            elif testType.lower() == 'bundle':
-              filepath = bundleMark(params)
-            else:
-              filepath = npmMark(params)
+      if "fis-wip" in gitSplit or "commit" in gitSplit or "fis-whip" in gitSplit:
+        status = "Incomplete"
+        msg = "Push your Code to the Master Branch"
+      else:
+        if len(gitSplit) == 5 or "master" in gitSplit or "main" in gitSplit:
+          params = {
+              "studentUsername": studentUsername,
+              "gitlink": gitlink,
+              "gitRepoName": gitRepoName
+          }
+          # marking starts
+          if testType.lower() == 'rspec':
+            filepath = rspecMark(params)
+          elif testType.lower() == 'bundle':
+            filepath = bundleMark(params)
+          else:
+            filepath = npmMark(params)
 
-            try:
-              with open(filepath) as f:
-                data = json.load(f)
+          try:
+            with open(filepath) as f:
+              data = json.load(f)
 
-                if testType.lower() == 'npm':
-                  # total number of examples
-                  exampleCount = data["stats"]["tests"]
-                  # failed number of examples
-                  failureCount = data["stats"]["failures"]
-                else:
-                  # total number of examples
-                  exampleCount = data['summary']['example_count']
-                  # failed number of examples
-                  failureCount = data['summary']['failure_count']
+              if testType.lower() == 'npm':
+                # total number of examples
+                exampleCount = data["stats"]["tests"]
+                # failed number of examples
+                failureCount = data["stats"]["failures"]
+              else:
+                # total number of examples
+                exampleCount = data['summary']['example_count']
+                # failed number of examples
+                failureCount = data['summary']['failure_count']
 
-                if failureCount >= exampleCount/2:
-                  status = "Incomplete"
-                  msg = "Either Test Failed or Do Push your code"
-                else:
-                  status = "Complete"
-                  msg = "Good Work"
-            except FileNotFoundError:
-              status = "Incomplete"
-              msg = "Check Manually Some files Missing"
+              if failureCount >= exampleCount/2:
+                status = "Incomplete"
+                msg = "Either Test Failed or Do Push your code"
+              else:
+                status = "Complete"
+                msg = "Good Work"
+          except FileNotFoundError:
+            status = "Incomplete"
+            msg = "Check Manually Some files Missing"
 
         # new instance
         newInstance(labname, sname, gitSplit[3], status, msg)
