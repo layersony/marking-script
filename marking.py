@@ -7,6 +7,7 @@ import csv
 import time
 from time import gmtime, strftime
 
+myStudents = []
 
 class bcolors:
   OKGREEN = '\033[92m'
@@ -73,67 +74,78 @@ def main(labname, testType):
       status = None
       msg = None
 
-      # get github repo link
-      for a in beautifulSoupText.find_all('a', href=True):
-        glink = a['href']
+      # check my Students
+      if sname in myStudents:
+        # get github repo link
+        for a in beautifulSoupText.find_all('a', href=True):
+          glink = a['href']
 
-      gitSplit = glink.split('/')
-      studentUsername = gitSplit[3]
-      gitlink = "/".join(gitSplit[:5]).split('?')[0].split('#')[0]
+        gitSplit = glink.split('/')
+        studentUsername = gitSplit[3]
+        gitlink = "/".join(gitSplit[:5]).split('?')[0].split('#')[0]
 
-      gitRepoName = gitSplit[4].split('.')[0].split('?')[0].split('#')[0]
-      print(studentUsername)
+        gitRepoName = gitSplit[4].split('.')[0].split('?')[0].split('#')[0]
+        print(studentUsername)
 
+        # creates folder for student
+        subprocess.run(["mkdir", f"{studentUsername}"])
+
+        if "fis-wip" in gitSplit or "commit" in gitSplit or "fis-whip" in gitSplit:
+          status = "Incomplete"
+          msg = "Push your Code to the Master Branch"
+        else:
+          if len(gitSplit) == 5 or "master" in gitSplit or "main" in gitSplit:
+            params = {
+                "studentUsername": studentUsername,
+                "gitlink": gitlink,
+                "gitRepoName": gitRepoName
+            }
+            # marking starts
+            if testType.lower() == 'rspec':
+              filepath = rspecMark(params)
+            elif testType.lower() == 'bundle':
+              filepath = bundleMark(params)
+            else:
+              filepath = npmMark(params)
+
+            try:
+              with open(filepath) as f:
+                data = json.load(f)
+
+                if testType.lower() == 'npm':
+                  # total number of examples
+                  exampleCount = data["stats"]["tests"]
+                  # failed number of examples
+                  failureCount = data["stats"]["failures"]
+                else:
+                  # total number of examples
+                  exampleCount = data['summary']['example_count']
+                  # failed number of examples
+                  failureCount = data['summary']['failure_count']
+
+                if failureCount >= exampleCount/2:
+                  status = "Incomplete"
+                  msg = "Either Test Failed or Do Push your code"
+                else:
+                  status = "Complete"
+                  msg = "Good Work"
+            except FileNotFoundError:
+              status = "Incomplete"
+              msg = "Check Manually Some files Missing"
+
+        # new instance
+        newInstance(labname, sname, gitSplit[3], status, msg)
+        subprocess.run(f"rm -rf {os.getcwd()}/{studentUsername}/", shell=True)
+        print("="*60)
+
+def codeChallenges():
+  for filename in os.listdir(f"{os.getcwd()}/submissions"):
+    print(filename)
+    if filename.endswith(".bundle"):
+      studentname = filename.split('_')[0]
       # creates folder for student
-      subprocess.run(["mkdir", f"{studentUsername}"])
+      subprocess.run(f"cd code_challenge; git clone {os.getcwd()}/submissions/{filename}", shell=True)
 
-      if "fis-wip" in gitSplit or "commit" in gitSplit or "fis-whip" in gitSplit:
-        status = "Incomplete"
-        msg = "Push your Code to the Master Branch"
-      else:
-        if len(gitSplit) == 5 or "master" in gitSplit or "main" in gitSplit:
-          params = {
-              "studentUsername": studentUsername,
-              "gitlink": gitlink,
-              "gitRepoName": gitRepoName
-          }
-          # marking starts
-          if testType.lower() == 'rspec':
-            filepath = rspecMark(params)
-          elif testType.lower() == 'bundle':
-            filepath = bundleMark(params)
-          else:
-            filepath = npmMark(params)
-
-          try:
-            with open(filepath) as f:
-              data = json.load(f)
-
-              if testType.lower() == 'npm':
-                # total number of examples
-                exampleCount = data["stats"]["tests"]
-                # failed number of examples
-                failureCount = data["stats"]["failures"]
-              else:
-                # total number of examples
-                exampleCount = data['summary']['example_count']
-                # failed number of examples
-                failureCount = data['summary']['failure_count']
-
-              if failureCount >= exampleCount/2:
-                status = "Incomplete"
-                msg = "Either Test Failed or Do Push your code"
-              else:
-                status = "Complete"
-                msg = "Good Work"
-          except FileNotFoundError:
-            status = "Incomplete"
-            msg = "Check Manually Some files Missing"
-
-      # new instance
-      newInstance(labname, sname, gitSplit[3], status, msg)
-      subprocess.run(f"rm -rf {os.getcwd()}/{studentUsername}/", shell=True)
-      print("="*60)
 
 
 def cleanup(labname) -> any:
@@ -148,16 +160,20 @@ def runProgram(labname):
   """
   Main program to run
   """
-  testType = input("Test Type [rspec or bundle or npm]: ")
+  testType = input("Test Type [rspec or bundle or npm or codechal]: ")
 
   if testType.strip() == "":
     print(f"{bcolors.WARNING}Make sure you enter test type \n{bcolors.ENDC}")
     runProgram(labname)
-  elif testType.strip() == "bundle" or testType.strip() == "rspec" or testType.strip() == "npm":
-    createheader(labname)
-    main(labname, testType)
-    print(f'{bcolors.OKGREEN}Done Marking{bcolors.ENDC}')
-    cleanup(labname)
+  elif testType.strip() == "bundle" or testType.strip() == "rspec" or testType.strip() == "npm" or testType.strip() == "codechal":
+    if testType.strip() == "codechal":
+      codeChallenges()
+      print(f'{bcolors.OKGREEN}Done Unbundle{bcolors.ENDC}')
+    else:
+      createheader(labname)
+      main(labname, testType)
+      cleanup(labname)
+      print(f'{bcolors.OKGREEN}Done Marking{bcolors.ENDC}')
   else:
     print(f"{bcolors.WARNING}Make sure the spelling is correct \n{bcolors.ENDC}")
     runProgram(labname)
