@@ -7,7 +7,6 @@ import csv
 import time
 from time import gmtime, strftime
 
-myStudents = []
 
 class bcolors:
   OKGREEN = '\033[92m'
@@ -21,8 +20,12 @@ def newInstance(labname, name, gitname, status, msg):
     writer = csv.writer(f)
     writer.writerow(data)
 
-def getStudentList():
-  return
+def getMyStudents() -> list:
+  myStudents = []
+  with open('important_docs/myStudents.txt', 'r') as f:
+    for i in f.readlines():
+      myStudents.append(' '.join(i.split()))
+  return myStudents
 
 def createheader(labname):
   header = ['Student Name', 'Git Name', 'Status', 'Message']
@@ -47,7 +50,7 @@ def bundleMark(params) -> str:
   Clones & runs learn test
   :return: path for this.json file
   """
-  subprocess.run(f"cd {params.get('studentUsername')}; git clone {params.get('gitlink')}; cd {params.get('gitRepoName')}; bundle install --retry=2; learn test -o this; cp .results.json this.json", shell=True)
+  subprocess.run(f"cd {params.get('studentUsername')}; git clone {params.get('gitlink')}; cd {params.get('gitRepoName')}; bundle install --retry=3; learn test -o this; cp .results.json this.json", shell=True)
   pathThisJson = f"{os.getcwd()}/{params.get('studentUsername')}/{params.get('gitRepoName')}/this.json"
   return pathThisJson
 
@@ -63,7 +66,7 @@ def npmMark(params) -> str:
 # mark those with learn
 
 
-def main(labname, testType):
+def main(labname, testType, myStudents):
   for filename in os.listdir(f"{os.getcwd()}/submissions"):
     # skip files that starts with . eg .dist
     if not filename.startswith('.'):
@@ -76,19 +79,18 @@ def main(labname, testType):
       status = None
       msg = None
 
-      # check my Students
+      # get github repo link
+      for a in beautifulSoupText.find_all('a', href=True):
+        glink = a['href']
+
+      gitSplit = glink.split('/')
+      studentUsername = gitSplit[3]
+      gitlink = "/".join(gitSplit[:5]).split('?')[0].split('#')[0]
+
+      gitRepoName = gitSplit[4].split('.')[0].split('?')[0].split('#')[0]
+
       if sname in myStudents:
-        # get github repo link
-        for a in beautifulSoupText.find_all('a', href=True):
-          glink = a['href']
-
-        gitSplit = glink.split('/')
-        studentUsername = gitSplit[3]
-        gitlink = "/".join(gitSplit[:5]).split('?')[0].split('#')[0]
-
-        gitRepoName = gitSplit[4].split('.')[0].split('?')[0].split('#')[0]
         print(studentUsername)
-
         # creates folder for student
         subprocess.run(["mkdir", f"{studentUsername}"])
 
@@ -135,10 +137,10 @@ def main(labname, testType):
               status = "Incomplete"
               msg = "Check Manually Some files Missing"
 
-        # new instance
-        newInstance(labname, sname, gitSplit[3], status, msg)
-        subprocess.run(f"rm -rf {os.getcwd()}/{studentUsername}/", shell=True)
-        print("="*60)
+          # new instance
+          newInstance(labname, sname, gitSplit[3], status, msg)
+          subprocess.run(f"rm -rf {os.getcwd()}/{studentUsername}/", shell=True)
+          print("="*60)
 
 def codeChallenges():
   for filename in os.listdir(f"{os.getcwd()}/submissions"):
@@ -168,12 +170,14 @@ def runProgram(labname):
     print(f"{bcolors.WARNING}Make sure you enter test type \n{bcolors.ENDC}")
     runProgram(labname)
   elif testType.strip() == "bundle" or testType.strip() == "rspec" or testType.strip() == "npm" or testType.strip() == "codechal":
+    # get my students
+    myStudents = getMyStudents()
     if testType.strip() == "codechal":
       codeChallenges()
       print(f'{bcolors.OKGREEN}Done Unbundle{bcolors.ENDC}')
     else:
       createheader(labname)
-      main(labname, testType)
+      main(labname, testType, myStudents)
       cleanup(labname)
       print(f'{bcolors.OKGREEN}Done Marking{bcolors.ENDC}')
   else:
@@ -184,12 +188,17 @@ def runProgram(labname):
 
 if __name__ == '__main__':
   try:
-    startTime = time.time() # in seconds
-    labname = input("Lab Name [studentResults]: ") or "studentResults"
-    runProgram(labname)
+    if os.path.isfile('important_docs/myStudents.txt'):
+      startTime = time.time() # in seconds
+      labname = input("Lab Name [studentResults]: ") or "studentResults"
+      runProgram(labname)
 
-    timeTaken = strftime('%H:%M:%S', gmtime(time.time()-startTime))
-    print(f"Marking Time: {timeTaken} minutes")
+      timeTaken = strftime('%H:%M:%S', gmtime(time.time()-startTime))
+      print(f"Marking Time: {timeTaken} minutes")
+    else:
+      print("*"*60)
+      print(f"{bcolors.FAIL}Error: Make sure myStudents.txt file exists in 'important_docs' directory{bcolors.ENDC}")
+      print("*"*60)
 
   except FileNotFoundError:
     print("*"*60)
