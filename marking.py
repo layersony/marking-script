@@ -21,6 +21,8 @@ def newInstance(labname, name, gitname, status, msg):
     writer = csv.writer(f)
     writer.writerow(data)
 
+def getStudentList():
+  return
 
 def createheader(labname):
   header = ['Student Name', 'Git Name', 'Status', 'Message']
@@ -45,7 +47,7 @@ def bundleMark(params) -> str:
   Clones & runs learn test
   :return: path for this.json file
   """
-  subprocess.run(f"cd {params.get('studentUsername')}; git clone {params.get('gitlink')}; cd {params.get('gitRepoName')}; bundle config set --local path 'vendor/bundle'; bundle install --retry=2; learn test -o this; cp .results.json this.json", shell=True)
+  subprocess.run(f"cd {params.get('studentUsername')}; git clone {params.get('gitlink')}; cd {params.get('gitRepoName')}; bundle install --retry=2; learn test -o this; cp .results.json this.json", shell=True)
   pathThisJson = f"{os.getcwd()}/{params.get('studentUsername')}/{params.get('gitRepoName')}/this.json"
   return pathThisJson
 
