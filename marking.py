@@ -7,7 +7,6 @@ import csv
 import time
 from time import gmtime, strftime
 
-myStudents = []
 
 class bcolors:
   OKGREEN = '\033[92m'
@@ -21,6 +20,12 @@ def newInstance(labname, name, gitname, status, msg):
     writer = csv.writer(f)
     writer.writerow(data)
 
+def getMyStudents() -> list:
+  myStudents = []
+  with open('important_docs/myStudents.txt', 'r') as f:
+    for i in f.readlines():
+      myStudents.append(' '.join(i.split()))
+  return myStudents
 
 def createheader(labname):
   header = ['Student Name', 'Git Name', 'Status', 'Message']
@@ -61,7 +66,7 @@ def npmMark(params) -> str:
 # mark those with learn
 
 
-def main(labname, testType):
+def main(labname, testType, myStudents):
   for filename in os.listdir(f"{os.getcwd()}/submissions"):
     # skip files that starts with . eg .dist
     if not filename.startswith('.'):
@@ -83,58 +88,59 @@ def main(labname, testType):
       gitlink = "/".join(gitSplit[:5]).split('?')[0].split('#')[0]
 
       gitRepoName = gitSplit[4].split('.')[0].split('?')[0].split('#')[0]
-      print(studentUsername)
 
-      # creates folder for student
-      subprocess.run(["mkdir", f"{studentUsername}"])
+      if sname in myStudents:
+        print(studentUsername)
+        # creates folder for student
+        subprocess.run(["mkdir", f"{studentUsername}"])
 
-      if "fis-wip" in gitSplit or "commit" in gitSplit or "fis-whip" in gitSplit:
-        status = "Incomplete"
-        msg = "Push your Code to the Master Branch"
-      else:
-        if len(gitSplit) == 5 or "master" in gitSplit or "main" in gitSplit:
-          params = {
-              "studentUsername": studentUsername,
-              "gitlink": gitlink,
-              "gitRepoName": gitRepoName
-          }
-          # marking starts
-          if testType.lower() == 'rspec':
-            filepath = rspecMark(params)
-          elif testType.lower() == 'bundle':
-            filepath = bundleMark(params)
-          else:
-            filepath = npmMark(params)
+        if "fis-wip" in gitSplit or "commit" in gitSplit or "fis-whip" in gitSplit:
+          status = "Incomplete"
+          msg = "Push your Code to the Master Branch"
+        else:
+          if len(gitSplit) == 5 or "master" in gitSplit or "main" in gitSplit:
+            params = {
+                "studentUsername": studentUsername,
+                "gitlink": gitlink,
+                "gitRepoName": gitRepoName
+            }
+            # marking starts
+            if testType.lower() == 'rspec':
+              filepath = rspecMark(params)
+            elif testType.lower() == 'bundle':
+              filepath = bundleMark(params)
+            else:
+              filepath = npmMark(params)
 
-          try:
-            with open(filepath) as f:
-              data = json.load(f)
+            try:
+              with open(filepath) as f:
+                data = json.load(f)
 
-              if testType.lower() == 'npm':
-                # total number of examples
-                exampleCount = data["stats"]["tests"]
-                # failed number of examples
-                failureCount = data["stats"]["failures"]
-              else:
-                # total number of examples
-                exampleCount = data['summary']['example_count']
-                # failed number of examples
-                failureCount = data['summary']['failure_count']
+                if testType.lower() == 'npm':
+                  # total number of examples
+                  exampleCount = data["stats"]["tests"]
+                  # failed number of examples
+                  failureCount = data["stats"]["failures"]
+                else:
+                  # total number of examples
+                  exampleCount = data['summary']['example_count']
+                  # failed number of examples
+                  failureCount = data['summary']['failure_count']
 
-              if failureCount >= exampleCount/2:
-                status = "Incomplete"
-                msg = "Either Test Failed or Do Push your code"
-              else:
-                status = "Complete"
-                msg = "Good Work"
-          except FileNotFoundError:
-            status = "Incomplete"
-            msg = "Check Manually Some files Missing"
+                if failureCount >= exampleCount/2:
+                  status = "Incomplete"
+                  msg = "Either Test Failed or Do Push your code"
+                else:
+                  status = "Complete"
+                  msg = "Good Work"
+            except FileNotFoundError:
+              status = "Incomplete"
+              msg = "Check Manually Some files Missing"
 
-        # new instance
-        newInstance(labname, sname, gitSplit[3], status, msg)
-        subprocess.run(f"rm -rf {os.getcwd()}/{studentUsername}/", shell=True)
-        print("="*60)
+          # new instance
+          newInstance(labname, sname, gitSplit[3], status, msg)
+          subprocess.run(f"rm -rf {os.getcwd()}/{studentUsername}/", shell=True)
+          print("="*60)
 
 def codeChallenges():
   for filename in os.listdir(f"{os.getcwd()}/submissions"):
@@ -164,12 +170,14 @@ def runProgram(labname):
     print(f"{bcolors.WARNING}Make sure you enter test type \n{bcolors.ENDC}")
     runProgram(labname)
   elif testType.strip() == "bundle" or testType.strip() == "rspec" or testType.strip() == "npm" or testType.strip() == "codechal":
+    # get my students
+    myStudents = getMyStudents()
     if testType.strip() == "codechal":
       codeChallenges()
       print(f'{bcolors.OKGREEN}Done Unbundle{bcolors.ENDC}')
     else:
       createheader(labname)
-      main(labname, testType)
+      main(labname, testType, myStudents)
       cleanup(labname)
       print(f'{bcolors.OKGREEN}Done Marking{bcolors.ENDC}')
   else:
@@ -180,12 +188,17 @@ def runProgram(labname):
 
 if __name__ == '__main__':
   try:
-    startTime = time.time() # in seconds
-    labname = input("Lab Name [studentResults]: ") or "studentResults"
-    runProgram(labname)
+    if os.path.isfile('important_docs/myStudents.txt'):
+      startTime = time.time() # in seconds
+      labname = input("Lab Name [studentResults]: ") or "studentResults"
+      runProgram(labname)
 
-    timeTaken = strftime('%H:%M:%S', gmtime(time.time()-startTime))
-    print(f"Marking Time: {timeTaken} minutes")
+      timeTaken = strftime('%H:%M:%S', gmtime(time.time()-startTime))
+      print(f"Marking Time: {timeTaken} minutes")
+    else:
+      print("*"*60)
+      print(f"{bcolors.FAIL}Error: Make sure myStudents.txt file exists in 'important_docs' directory{bcolors.ENDC}")
+      print("*"*60)
 
   except FileNotFoundError:
     print("*"*60)
