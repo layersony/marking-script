@@ -14,8 +14,8 @@ class bcolors:
   FAIL = '\033[91m'
   ENDC = '\033[0m'
 
-def newInstance(labname, name, gitname, status, msg):
-  data = [name, gitname, status, msg]
+def newInstance(labname, studentId, name, gitname, status, msg):
+  data = [studentId, name, gitname, status, msg]
   with open(f'{labname}.csv', 'a', encoding='UTF8') as f:
     writer = csv.writer(f)
     writer.writerow(data)
@@ -28,7 +28,7 @@ def getMyStudents() -> list:
   return myStudents
 
 def createheader(labname):
-  header = ['Student Name', 'Git Name', 'Status', 'Message']
+  header = ['Id', 'Student Name', 'Git Name', 'Status', 'Message']
   with open(f'{labname}.csv', 'w', encoding='UTF8') as f:
     writer = csv.writer(f)
     writer.writerow(header)
@@ -69,6 +69,7 @@ def npmMark(params) -> str:
 def main(labname, testType, myStudents):
   for filename in os.listdir(f"{os.getcwd()}/submissions"):
     # skip files that starts with . eg .dist
+    studentId = int(filename.split("_")[1])
     if not filename.startswith('.'):
       f = codecs.open(f"submissions/{filename}", "r", "utf-8")
       content = f.read()
@@ -138,7 +139,7 @@ def main(labname, testType, myStudents):
               msg = "Check Manually Some files Missing"
 
           # new instance
-          newInstance(labname, sname, gitSplit[3], status, msg)
+          newInstance(labname, studentId, sname, gitSplit[3], status, msg)
           subprocess.run(f"rm -rf {os.getcwd()}/{studentUsername}/", shell=True)
           print("="*60)
 
