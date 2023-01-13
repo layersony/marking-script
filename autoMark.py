@@ -5,6 +5,7 @@ import time
 import os, csv
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import Select
+from time import gmtime, strftime
 
 def login(email, passcode):
   driver.get('https://moringa.instructure.com/login')
@@ -23,10 +24,12 @@ def getStudent(assign_id, filename):
       csv_file_reader = csv.reader(csvfile,delimiter=',')
       for row in csv_file_reader:
           if row[0].isdigit():
+            print(f'{row[0]} -> {row[1]}')
             get_pages(assign_id, row[0], row[3], row[4])
 
 def get_pages(assign_id, st_id, status, comment): 
   driver.get(f'https://moringa.instructure.com/courses/186/gradebook/speed_grader?assignment_id={assign_id}&student_id={st_id}')
+  print(f'https://moringa.instructure.com/courses/186/gradebook/speed_grader?assignment_id={assign_id}&student_id={st_id}')
   time.sleep(10)
   # for dropdown
   h = Select(driver.find_element('id', 'grading-box-extended'))
@@ -40,6 +43,7 @@ def get_pages(assign_id, st_id, status, comment):
   # text box comment
   driver.find_element('id','speed_grader_comment_textarea').send_keys(comment)
   driver.find_element(By.XPATH, '//*[@id="comment_submit_button"]').send_keys(Keys.RETURN)
+  print(f'{st_id} -> Done')
   time.sleep(7)
 
 if __name__ == '__main__':
@@ -47,8 +51,10 @@ if __name__ == '__main__':
     print('********** Moringa User Detail **********')
     email = input('Moringa Email [samuel.maingi@moringaschool.com]: ') or 'samuel.maingi@moringaschool.com'
     passcode = input('Moringa Passcode: ') or 'Madcity9586'
-    assign_id = input('Assignment ID: ')
     filename = input('Marked Csv name: ')
+    assign_id = input('Assignment ID: ')
+
+    startTime = time.time()
 
     driver = webdriver.Chrome(executable_path='./chromedriver')
     driver.implicitly_wait(0.5)
@@ -58,5 +64,8 @@ if __name__ == '__main__':
     getStudent(assign_id, filename)
 
     driver.close()
+
+    timeTaken = strftime('%H:%M:%S', gmtime(time.time()-startTime))
+    print(f"Marking Time: {timeTaken} minutes")
   except:
     print('\n\nUser Cancelled..')
