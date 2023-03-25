@@ -7,6 +7,7 @@ import csv
 import time
 from time import gmtime, strftime
 from json.decoder import JSONDecodeError
+from subprocess import Popen, PIPE
 
 class bcolors:
   OKGREEN = '\033[92m'
@@ -63,10 +64,21 @@ def npmMark(params) -> str:
   subprocess.run(f"cd {params.get('studentUsername')}; git clone {params.get('gitlink')}; cd {params.get('gitRepoName')};npm install; npm test; cp .results.json this.json", shell=True)
   pathThisJson = f"{os.getcwd()}/{params.get('studentUsername')}/{params.get('gitRepoName')}/this.json"
   return pathThisJson
+
+def reactnpmMark(params) -> str:
+  """
+  Clones & runs learn test
+  :return: path for this.json file
+  """
+  subprocess.run(f"cd {params.get('studentUsername')}; git clone {params.get('gitlink')}; cd {params.get('gitRepoName')};npm install; npm i npm test; cp .results.json this.json", shell=True)
+  pathThisJson = f"{os.getcwd()}/{params.get('studentUsername')}/{params.get('gitRepoName')}/this.json"
+  return pathThisJson
+
 # mark those with learn
 
-
 def main(labname, testType, myStudents, phrase):
+  lenFiles = len(os.listdir(f"{os.getcwd()}/submissions"))
+  currStud = 1
   for filename in os.listdir(f"{os.getcwd()}/submissions"):
     # skip files that starts with . eg .dist
     studentId = int(filename.split("_")[1])
@@ -93,6 +105,8 @@ def main(labname, testType, myStudents, phrase):
   
 
         if sname in myStudents:
+          print(f"{currStud} / {lenFiles}")
+          currStud+=1
           print(studentUsername)
           # creates folder for student
           subprocess.run(["mkdir", f"{studentUsername}"])
@@ -110,13 +124,17 @@ def main(labname, testType, myStudents, phrase):
                   "gitlink": gitlink,
                   "gitRepoName": gitRepoName
               }
-              # marking starts
-              if testType.lower() == 'rspec':
-                filepath = rspecMark(params)
-              elif testType.lower() == 'bundle':
-                filepath = bundleMark(params)
-              else:
-                filepath = npmMark(params)
+              try:
+                # marking starts
+                if testType.lower() == 'rspec':
+                  filepath = rspecMark(params)
+                elif testType.lower() == 'bundle':
+                  filepath = bundleMark(params)
+                else:
+                  filepath = npmMark(params)
+              except KeyboardInterrupt:
+                  continue
+
 
               try:
                 with open(filepath) as f:
@@ -135,7 +153,7 @@ def main(labname, testType, myStudents, phrase):
 
                   if failureCount >= exampleCount/2:
                     status = "Incomplete"
-                    msg = "Either Test Failed or Do Push your code"
+                    msg = "Some Test Failed to Passed, Kindly Recheck and Resubmit"
                   else:
                     status = "Complete"
                     msg = "Good Work"
@@ -153,6 +171,7 @@ def main(labname, testType, myStudents, phrase):
           
       except IndexError:
         pass
+
 def codeChallenges():
   for filename in os.listdir(f"{os.getcwd()}/submissions"):
     print(filename)
@@ -160,8 +179,6 @@ def codeChallenges():
       studentname = filename.split('_')[0]
       # creates folder for student
       subprocess.run(f"cd code_challenge; git clone {os.getcwd()}/submissions/{filename}", shell=True)
-
-
 
 def cleanup(labname) -> any:
   subprocess.run(f"mv {os.getcwd()}/{labname}.csv  {os.getcwd()}/markedCsv", shell=True)
